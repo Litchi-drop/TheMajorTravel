@@ -183,6 +183,7 @@
     vertical-align: middle; margin-right: 6px; border-radius: 2px;
   }
   .route-legend .sw.dash { border-top-style: dashed; }
+  .route-legend .sw.ferry { border-top-style: dotted; border-top-color: #0284c7; }
 
   .popup-body { max-width: 240px; }
   .popup-body h4 { font-size: 14px; margin-bottom: 2px; }
@@ -311,8 +312,8 @@ const TYPES = {
 };
 
 // 蓝本行程（坐标为 WGS-84，可在地图上拖动微调）
-function P(name, type, lat, lng, desc) {
-  return { id: "bp_" + Math.random().toString(36).slice(2, 9), name, type, coords: [lat, lng], desc, blueprint: true };
+function P(name, type, lat, lng, desc, opts) {
+  return { id: "bp_" + Math.random().toString(36).slice(2, 9), name, type, coords: [lat, lng], desc, blueprint: true, ...opts };
 }
 const HOTEL = () => P("Holiday Inn 伯克街假日酒店", "hotel", -37.8152, 144.9548,
   "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。");
@@ -342,14 +343,19 @@ const BLUEPRINT = {
       ],
     },
     {
-      id: "d3", date: "10/2 周五", title: "莫宁顿半岛一日游", color: "#f59e0b",
-      note: "单程约 1.5 小时，沿海岸线一路玩下去。春季（10 月）是半岛最好的季节，记得带防晒。",
+      id: "d3", date: "10/2 周五", title: "莫宁顿半岛 · 轮渡过湾一日游", color: "#f59e0b",
+      note: "今天不走回头路：沿半岛一路玩到索伦托，坐 Searoad 车渡横跨菲利普湾（约 40 分钟）到昆斯克里夫，看完朗斯代尔角灯塔穿过吉朗海滨，走 M1 高速过西门大桥回市区。渡轮旺季建议提前网上购票；春季（10 月）是半岛最好的季节，记得带防晒。",
       places: [
         HOTEL(),
         P("布莱顿彩虹小屋", "nature", -37.9161, 144.9868, "82 座彩色更衣棚沿滩排开，墨尔本最经典的明信片机位，顺路第一站。"),
         P("莫宁顿小镇主街", "food", -38.2216, 145.0389, "Mornington Main Street 海边小镇，咖啡馆和早午餐店密集，适合歇脚吃午饭。"),
         P("亚瑟座山观景台", "nature", -38.3520, 144.9490, "半岛制高点，可俯瞰菲利普湾全景，观景塔 + 缆车 + 迷宫花园。"),
-        P("索伦托 Sorrento", "nature", -38.3396, 144.7382, "石灰岩海岸小镇，傍晚的海口景色极美，也可坐轮渡横跨海湾。"),
+        P("索伦托 Sorrento", "nature", -38.3396, 144.7382, "石灰岩海岸小镇，逛完主街前往轮渡码头，乘 Searoad 渡轮过湾到对岸的昆斯克里夫。"),
+        P("索伦托轮渡码头", "traffic", -38.33611, 144.74574, "Searoad Ferries 索伦托侧码头，连人带车横跨菲利普湾（约 40 分钟，班次密集，旺季建议提前购票）。"),
+        P("昆斯克里夫 Queenscliff", "sight", -38.26561, 144.67250, "渡轮靠岸的维多利亚式海港小镇，有海事博物馆和黑色灯塔要塞，码头边咖啡馆适合小憩。", { ferry: true }),
+        P("朗斯代尔角灯塔", "sight", -38.29201, 144.61392, "Point Lonsdale Lighthouse，守在菲利普港湾入口「怒涛之门 The Rip」西侧，湾内湾外的分界点，可预约导览登塔。"),
+        P("吉朗海滨 Eastern Beach", "nature", -38.1447, 144.3642, "回程顺路穿过吉朗壮丽的海滨一线（海边木雕人偶 + 旋转木马），补给后上 M1 高速。"),
+        P("西门大桥 West Gate Bridge", "traffic", -37.82527, 144.88757, "M1 高速跨亚拉河的标志大桥，墨尔本西侧门户，过桥即进入市区。"),
         HOTEL(),
       ],
     },
@@ -414,7 +420,7 @@ const BLUEPRINT = {
 
 /* ================= 状态 ================= */
 
-const STORE_KEY = "majortravel-v2";
+const STORE_KEY = "majortravel-v3";
 let state = load();
 let currentDayId = "overview";   // 'overview' 或 day.id
 let highlightIds = new Set();    // 总览模式下勾选要一起高亮的天
@@ -459,7 +465,7 @@ L.control.layers({ "街道图": esriStreetLayer, "卫星图": satelliteLayer }, 
 const legendCtrl = L.control({ position: "bottomleft" });
 legendCtrl.onAdd = function () {
   const div = L.DomUtil.create("div", "route-legend");
-  div.innerHTML = `<div><span class="sw"></span>去程 · 实线</div><div><span class="sw dash"></span>返程 · 虚线</div>`;
+  div.innerHTML = `<div><span class="sw"></span>去程 · 实线</div><div><span class="sw dash"></span>返程 · 虚线</div><div><span class="sw ferry"></span>轮渡 · 点线</div>`;
   return div;
 };
 legendCtrl.addTo(map);
@@ -512,8 +518,13 @@ function fallbackRoute(places) {
   const geometry = { type: "LineString", coordinates: places.map(p => [p.coords[1], p.coords[0]]) };
   const legs = [];
   for (let i = 0; i < places.length - 1; i++) {
-    const d = haversine(places[i].coords, places[i + 1].coords) * 1.3;
-    legs.push({ distance: d, duration: d / (65 / 3.6) }); // 按 65km/h 估算
+    if (places[i + 1].ferry) {
+      const d = haversine(places[i].coords, places[i + 1].coords);
+      legs.push({ distance: d, duration: d / (15 / 3.6), ferry: true }); // 渡轮约 15km/h
+    } else {
+      const d = haversine(places[i].coords, places[i + 1].coords) * 1.3;
+      legs.push({ distance: d, duration: d / (65 / 3.6) }); // 按 65km/h 估算
+    }
   }
   return { geometry, legs, approx: true };
 }
@@ -581,24 +592,55 @@ function splitLegGeometries(r, places) {
   return legs;
 }
 
+async function osrmRoute(places) {
+  const coords = places.map(p => `${p.coords[1].toFixed(6)},${p.coords[0].toFixed(6)}`).join(";");
+  const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const json = await res.json();
+  if (json.code !== "Ok" || !json.routes || !json.routes.length) throw new Error(json.code);
+  return json.routes[0];
+}
+
 async function computeRoute(day) {
   const places = day.places;
   if (places.length < 2) return { geometry: null, legs: [], approx: false };
-  const coords = places.map(p => `${p.coords[1].toFixed(6)},${p.coords[0].toFixed(6)}`).join(";");
-  try {
-    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
-    if (json.code !== "Ok" || !json.routes || !json.routes.length) throw new Error(json.code);
-    return {
-      geometry: json.routes[0].geometry,
-      legs: json.routes[0].legs.map(l => ({ distance: l.distance, duration: l.duration })),
-      approx: false,
-    };
-  } catch (e) {
-    console.warn("OSRM 不可用，使用直线估算：", e.message);
-    return fallbackRoute(places);
+  // 带 ferry:true 的站表示"到达该站的这一段是轮渡"（如索伦托→昆斯克里夫过湾）：
+  // 按轮渡边界切块，逐块算驾车路线，轮渡段用直线相连
+  const starts = [0];
+  for (let i = 1; i < places.length; i++) if (places[i].ferry) starts.push(i);
+  const allCoords = [];
+  const legs = [];
+  let approx = false;
+  for (let k = 0; k < starts.length; k++) {
+    const from = starts[k];
+    const to = k + 1 < starts.length ? starts[k + 1] : places.length;
+    const chunk = places.slice(from, to);
+    if (chunk.length >= 2) {
+      try {
+        const route = await osrmRoute(chunk);
+        const coords = route.geometry.coordinates;
+        if (allCoords.length) coords.shift(); // 去掉与上一段衔接处重复的顶点
+        allCoords.push(...coords);
+        for (const l of route.legs) legs.push({ distance: l.distance, duration: l.duration });
+      } catch (e) {
+        console.warn("OSRM 不可用，使用直线估算：", e.message);
+        approx = true;
+        const fb = fallbackRoute(chunk);
+        if (allCoords.length) fb.geometry.coordinates.shift();
+        allCoords.push(...fb.geometry.coordinates);
+        legs.push(...fb.legs);
+      }
+    }
+    if (k + 1 < starts.length) {
+      const a = places[to - 1], b = places[to];
+      const d = haversine(a.coords, b.coords);
+      if (!allCoords.length) allCoords.push([a.coords[1], a.coords[0]]);
+      allCoords.push([b.coords[1], b.coords[0]]);
+      legs.push({ distance: d, duration: d / (15 / 3.6), ferry: true });
+    }
   }
+  if (!allCoords.length) return { geometry: null, legs: [], approx };
+  return { geometry: { type: "LineString", coordinates: allCoords }, legs, approx };
 }
 
 const routePending = new Map();   // dayId -> 进行中的请求，避免并发重复调用
@@ -613,10 +655,12 @@ function invalidateRoute(dayId) { routeCache.delete(dayId); }
 
 /* ================= 渲染 ================= */
 
+let renderSeq = 0;               // 渲染序号：丢弃迟到旧渲染，防止快速切换时互相覆盖
 function render() {
+  const seq = ++renderSeq;
   renderTabs();
-  renderSidebar();
-  renderMap();
+  renderSidebar(seq);
+  renderMap(seq);
 }
 
 function renderTabs() {
@@ -655,10 +699,11 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-async function renderSidebar() {
+async function renderSidebar(seq) {
   const el = document.getElementById("sidebar");
   if (currentDayId === "overview") {
     const routes = await Promise.all(state.days.map(d => routeFor(d)));
+    if (seq !== renderSeq) return;
     const sumD = r => r.legs.reduce((s, l) => s + l.distance, 0);
     const sumT = r => r.legs.reduce((s, l) => s + l.duration, 0);
     const selD = routes.reduce((s, r, i) => s + (highlightIds.has(state.days[i].id) ? sumD(r) : 0), 0);
@@ -689,8 +734,9 @@ async function renderSidebar() {
   }
 
   const day = getDay(currentDayId);
-  if (!day) { currentDayId = "overview"; return renderSidebar(); }
+  if (!day) { currentDayId = "overview"; return renderSidebar(seq); }
   const r = await routeFor(day);
+  if (seq !== renderSeq) return;
   const totalD = r.legs.reduce((s, l) => s + l.distance, 0);
   const totalT = r.legs.reduce((s, l) => s + l.duration, 0);
 
@@ -727,7 +773,9 @@ async function renderSidebar() {
     if (i < day.places.length - 1 && r.legs[i]) {
       const leg = r.legs[i];
       const isReturn = i >= retFrom;
-      const label = leg.distance > 800000
+      const label = leg.ferry
+        ? `⛴️ 轮渡段 · ${fmtDist(leg.distance)} · ${fmtDur(leg.duration)}（Searoad 车渡过湾）`
+        : leg.distance > 800000
         ? `✈️ 飞行段 · 约 ${fmtDist(leg.distance)}（跨洋示意，非车程）`
         : `${isReturn ? "↩️ 返程 · " : "🚗 "}${fmtDist(leg.distance)} · ${fmtDur(leg.duration)}`;
       html += `<div class="leg-pill"><span>${label}</span></div>`;
@@ -759,35 +807,41 @@ function bindMarker(m, p, dayId, idx, isLoopEnd) {
   });
 }
 
-async function renderMap() {
+async function renderMap(seq) {
   if (markersLayer) map.removeLayer(markersLayer);
   if (linesLayer) map.removeLayer(linesLayer);
-  markersLayer = L.layerGroup().addTo(map);
-  linesLayer = L.layerGroup().addTo(map);
+  // 捕获本次渲染的图层引用：迟到的旧渲染只会画进已脱离地图的组，不会污染新视图
+  const myMarkers = markersLayer = L.layerGroup().addTo(map);
+  const myLines = linesLayer = L.layerGroup().addTo(map);
   const bounds = L.latLngBounds();
   let anyDashed = false;
+  let anyFerry = false;
 
   const drawDay = async (day, opts) => {
     const r = await routeFor(day);
     if (r.geometry) {
       const latlngs = L.GeoJSON.coordsToLatLngs(r.geometry.coordinates);
-      // 白色描边整条画一次，再按段画彩色线，返程段用虚线
-      L.polyline(latlngs, {
-        color: "#ffffff",
-        weight: opts.dim ? 2.5 : (opts.small && !opts.hi ? 4 : 8),
-        opacity: opts.dim ? .5 : .9,
-      }).addTo(linesLayer);
       const retFrom = returnLegStart(day);
+      // 按段绘制：白色描边 + 彩色线；返程虚线；轮渡段蓝色点线且不画描边（避免看着像跨海大桥）
       splitLegGeometries(r, day.places).forEach((geo, i) => {
         if (geo.length < 2) return;
         const isReturn = i >= retFrom;
+        const isFerry = r.legs[i] && r.legs[i].ferry;
         if (isReturn) anyDashed = true;
+        if (isFerry) anyFerry = true;
+        if (!isFerry) {
+          L.polyline(L.GeoJSON.coordsToLatLngs(geo), {
+            color: "#ffffff",
+            weight: (opts.dim ? 2.5 : (opts.small && !opts.hi ? 4 : 8)) + 3.5,
+            opacity: opts.dim ? .5 : .9,
+          }).addTo(myLines);
+        }
         L.polyline(L.GeoJSON.coordsToLatLngs(geo), {
-          color: day.color,
+          color: isFerry ? "#0284c7" : day.color,
           weight: opts.dim ? 1.5 : (opts.small && !opts.hi ? 2 : 4.5),
           opacity: opts.dim ? .3 : (opts.small && !opts.hi ? .75 : 1),
-          dashArray: isReturn ? "10 7" : (r.approx ? "8 6" : null),
-        }).addTo(linesLayer);
+          dashArray: isFerry ? "2 10" : isReturn ? "10 7" : (r.approx ? "8 6" : null),
+        }).addTo(myLines);
       });
       if (!opts.dim) latlngs.forEach(ll => bounds.extend(ll));
     }
@@ -802,7 +856,7 @@ async function renderMap() {
         icon: markerIcon(p, i, TYPES[p.type] ? TYPES[p.type].color : "#334155", opts.small, dup > 0 ? dup * 26 : 0),
         draggable: !!opts.interactive,
         opacity: opts.dim ? .45 : 1,
-      }).addTo(markersLayer);
+      }).addTo(myMarkers);
       if (opts.interactive) bindMarker(m, p, day.id, i, isLoopEnd);
       else m.bindTooltip(`${day.date} · ${p.name}`, { direction: "top", className: "qty" });
       if (!opts.dim) bounds.extend(p.coords);
@@ -819,8 +873,9 @@ async function renderMap() {
     const day = getDay(currentDayId);
     if (day) await drawDay(day, { small: false, hi: true, interactive: true });
   }
+  if (seq !== renderSeq) return;   // 已有更新一次的渲染，放弃本次的视野与图例
   if (bounds.isValid()) map.fitBounds(bounds.pad(0.12));
-  updateLegend(anyDashed);
+  updateLegend(anyDashed || anyFerry);
 }
 
 /* ================= 添加 / 编辑 ================= */
