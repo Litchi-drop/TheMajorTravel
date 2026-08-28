@@ -420,18 +420,14 @@ const map = L.map("map", { zoomControl: true }).setView([-38.1, 144.9], 8);
 // 缩放/平移后保留更多已加载瓦片，减少灰块出现
 const TILE_OPTS = { keepBuffer: 6, updateWhenZooming: false };
 
-const streetLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-  ...TILE_OPTS, subdomains: "abcd", maxNativeZoom: 19, maxZoom: 20,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-});
 const esriStreetLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
   ...TILE_OPTS, maxNativeZoom: 19, maxZoom: 20, attribution: "Tiles &copy; Esri",
 });
 const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
   ...TILE_OPTS, maxNativeZoom: 19, maxZoom: 20, attribution: "Tiles &copy; Esri",
 });
-streetLayer.addTo(map);
-L.control.layers({ "街道图": streetLayer, "街道图(Esri)": esriStreetLayer, "卫星图": satelliteLayer }, null, { position: "topright" }).addTo(map);
+esriStreetLayer.addTo(map);
+L.control.layers({ "街道图": esriStreetLayer, "卫星图": satelliteLayer }, null, { position: "topright" }).addTo(map);
 
 // 境外瓦片服务加载失败时自动重试（带退避），避免永久灰块
 function attachTileRetry(layer, maxRetries) {
@@ -447,7 +443,7 @@ function attachTileRetry(layer, maxRetries) {
     }, 700 * n);
   });
 }
-[streetLayer, esriStreetLayer, satelliteLayer].forEach(l => attachTileRetry(l, 3));
+[esriStreetLayer, satelliteLayer].forEach(l => attachTileRetry(l, 3));
 
 /* ================= 路线计算（OSRM，失败降级直线） ================= */
 
