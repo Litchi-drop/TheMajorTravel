@@ -453,14 +453,67 @@ map.attributionControl.setPrefix(""); // 移除 Leaflet 官网链接前缀，保
 // 缩放/平移后保留更多已加载瓦片，减少灰块出现
 const TILE_OPTS = { keepBuffer: 6, updateWhenZooming: false };
 
+/* —— 合规底图：天地图（自然资源部官方平台，有审图号）——
+ * 坐标系 CGCS2000≈WGS-84，行程点/OSRM 路线可直接叠加，无需纠偏；
+ * 海外仅有主要路网与地名，街道/商铺细节由下方 Esri 图层（地理围栏内）满足。
+ * key 申请：https://www.tianditu.gov.cn 免费注册 → 控制台 → 创建「浏览器端」应用 */
+const TD_TOKEN = "26b8d92410636136f6429e87e87b9603"; // 未填写时回退为纯 Esri 底图（过渡期），上线前必须配置
+const TD_OPTS = { ...TILE_OPTS, subdomains: "01234567", maxNativeZoom: 18, maxZoom: 18, attribution: "底图 © 国家地理信息公共服务平台（天地图）" };
+const tdVec = L.tileLayer("https://t{s}.tianditu.gov.cn/DataServer?T=vec_w&x={x}&y={y}&l={z}&tk=" + TD_TOKEN, TD_OPTS);
+const tdVecLabel = L.tileLayer("https://t{s}.tianditu.gov.cn/DataServer?T=cva_w&x={x}&y={y}&l={z}&tk=" + TD_TOKEN, { ...TD_OPTS, attribution: "" });
+const tdImg = L.tileLayer("https://t{s}.tianditu.gov.cn/DataServer?T=img_w&x={x}&y={y}&l={z}&tk=" + TD_TOKEN, TD_OPTS);
+const tdImgLabel = L.tileLayer("https://t{s}.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk=" + TD_TOKEN, { ...TD_OPTS, attribution: "" });
+const tdStreetGroup = L.layerGroup([tdVec, tdVecLabel]);
+const tdSatGroup = L.layerGroup([tdImg, tdImgLabel]); // 海外清晰度有限，海外卫星细节用 Esri 图层
+
+/* —— 海外详细图层：Esri（无中国审图号，中国界线画法不符合规定）——
+ * 地理围栏：视野中心进入中国范围（含台湾、南海诸岛，刻意放宽）即从图层面板移除，
+ * 使用中则自动切回天地图，确保 Esri 瓦片里的中国领土画法永远不会被显示 */
 const esriStreetLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
   ...TILE_OPTS, maxNativeZoom: 19, maxZoom: 20, attribution: "Tiles &copy; Esri",
 });
 const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
   ...TILE_OPTS, maxNativeZoom: 19, maxZoom: 20, attribution: "Tiles &copy; Esri",
 });
-esriStreetLayer.addTo(map);
-L.control.layers({ "街道图": esriStreetLayer, "卫星图": satelliteLayer }, null, { position: "topright" }).addTo(map);
+
+const hasTdKey = Boolean(TD_TOKEN);
+function inChinaRegion() {
+  const { lat, lng } = map.getCenter();
+  return lat > 0 && lat < 55 && lng > 70 && lng < 140;
+}
+let layerCtrl = null;
+function rebuildLayerCtrl() {
+  if (layerCtrl) layerCtrl.remove();
+  let bases = hasTdKey
+    ? { "天地图·街道": tdStreetGroup, "天地图·卫星": tdSatGroup, "海外街道详情（Esri）": esriStreetLayer, "海外卫星（Esri）": satelliteLayer }
+    : { "街道图": esriStreetLayer, "卫星图": satelliteLayer };
+  if (hasTdKey && inChinaRegion()) {
+    delete bases["海外街道详情（Esri）"];
+    delete bases["海外卫星（Esri）"];
+  }
+  layerCtrl = L.control.layers(bases, null, { position: "topright" }).addTo(map);
+}
+function applyLayerGate() {
+  if (!hasTdKey) return;
+  if (inChinaRegion() && (map.hasLayer(esriStreetLayer) || map.hasLayer(satelliteLayer))) {
+    const wasSat = map.hasLayer(satelliteLayer);
+    map.removeLayer(esriStreetLayer);
+    map.removeLayer(satelliteLayer);
+    if (map.getZoom() > 18) map.setZoom(18); // 天地图最高 18 级
+    map.addLayer(wasSat ? tdSatGroup : tdStreetGroup);
+    toast("当前视野进入中国区域，已切换到合规底图（天地图）");
+  }
+  rebuildLayerCtrl();
+}
+map.on("moveend", applyLayerGate);
+
+if (hasTdKey) {
+  tdStreetGroup.addTo(map);
+} else {
+  esriStreetLayer.addTo(map);
+  console.warn("[底图合规] TD_TOKEN 未配置，暂以 Esri 底图运行；上线前请申请天地图 key 并填入");
+}
+rebuildLayerCtrl();
 
 // 去程/返程图例（有返程段时才显示）
 const legendCtrl = L.control({ position: "bottomleft" });
@@ -489,7 +542,7 @@ function attachTileRetry(layer, maxRetries) {
     }, 700 * n);
   });
 }
-[esriStreetLayer, satelliteLayer].forEach(l => attachTileRetry(l, 3));
+[esriStreetLayer, satelliteLayer, tdVec, tdVecLabel, tdImg, tdImgLabel].forEach(l => attachTileRetry(l, 3));
 
 /* ================= 路线计算（OSRM，失败降级直线） ================= */
 
