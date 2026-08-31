@@ -55,17 +55,30 @@
   .tab:hover { transform: translateY(-1px); }
 
   /* ---------- 主区域 ---------- */
-  #app { flex: 1; display: flex; min-height: 0; }
+  #app { flex: 1; display: flex; min-height: 0; position: relative; }
 
   aside {
     width: 330px; flex: none; background: var(--panel);
     border-right: 1px solid var(--line);
     display: flex; flex-direction: column; min-height: 0;
+    overflow: hidden; transition: width .25s ease, max-height .25s ease;
   }
+  body.sb-collapsed aside { width: 0; border-right-width: 0; }
   #sidebar { flex: 1; overflow-y: auto; padding: 12px; }
 
   #map { flex: 1; min-width: 0; }
   #map.adding { cursor: crosshair; }
+
+  /* 侧栏收起/展开把手：贴在侧栏与地图交界处，收起后仍停靠屏幕左缘 */
+  #sbToggle {
+    position: absolute; z-index: 700; top: 50%; transform: translateY(-50%);
+    left: calc(330px - 13px); width: 26px; height: 56px; padding: 0;
+    border: 1px solid var(--line); border-left: none; border-radius: 0 8px 8px 0;
+    background: #fff; color: var(--ink-2); font-size: 12px; cursor: pointer;
+    box-shadow: 2px 0 6px rgba(15,23,42,.08); transition: left .25s ease;
+  }
+  #sbToggle:hover { color: var(--brand); }
+  body.sb-collapsed #sbToggle { left: 0; }
 
   /* ---------- 侧栏内容 ---------- */
   .day-head { margin-bottom: 10px; }
@@ -236,7 +249,15 @@
   @media (max-width: 760px) {
     #app { flex-direction: column; }
     aside { width: 100%; max-height: 45%; order: 2; border-right: none; border-top: 1px solid var(--line); }
+    body.sb-collapsed aside { width: 100%; max-height: 0; border-top-width: 0; }
     #map { order: 1; min-height: 55%; }
+    #sbToggle {
+      top: auto; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 72px; height: 26px; border: 1px solid var(--line); border-bottom: none;
+      border-radius: 8px 8px 0 0; box-shadow: 0 -2px 6px rgba(15,23,42,.08);
+      transition: none;
+    }
+    body.sb-collapsed #sbToggle { left: 50%; }
   }
 </style>
 </head>
@@ -258,6 +279,7 @@
 <div id="tabs"></div>
 
 <div id="app">
+  <button id="sbToggle" type="button" aria-label="收起或展开侧边栏" title="收起/展开侧边栏"></button>
   <aside>
     <div id="sidebar"></div>
     <div id="addBar">
@@ -514,6 +536,30 @@ if (hasTdKey) {
   console.warn("[底图合规] TD_TOKEN 未配置，暂以 Esri 底图运行；上线前请申请天地图 key 并填入");
 }
 rebuildLayerCtrl();
+
+/* ---- 侧边栏收起/展开（用户自选，状态记忆到 localStorage） ---- */
+const sbToggle = document.getElementById("sbToggle");
+const sbMobileMq = window.matchMedia("(max-width: 760px)");
+function applySbToggleIcon() {
+  const collapsed = document.body.classList.contains("sb-collapsed");
+  sbToggle.textContent = sbMobileMq.matches ? (collapsed ? "▲" : "▼") : (collapsed ? "▶" : "◀");
+}
+function toggleSidebar() {
+  const collapsed = document.body.classList.toggle("sb-collapsed");
+  localStorage.setItem("sb-collapsed", collapsed ? "1" : "0");
+  applySbToggleIcon();
+  map.invalidateSize(); // 立即校准；宽度过渡结束后再校准一次（transitionend）
+}
+sbToggle.addEventListener("click", toggleSidebar);
+document.querySelector("aside").addEventListener("transitionend", e => {
+  if (e.propertyName === "width" || e.propertyName === "max-height") map.invalidateSize();
+});
+sbMobileMq.addEventListener("change", applySbToggleIcon);
+if (localStorage.getItem("sb-collapsed") === "1") {
+  document.body.classList.add("sb-collapsed");
+  map.invalidateSize();
+}
+applySbToggleIcon();
 
 // 去程/返程图例（有返程段时才显示）
 const legendCtrl = L.control({ position: "bottomleft" });
