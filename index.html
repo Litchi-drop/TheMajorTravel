@@ -180,6 +180,8 @@
   }
   .pin.small { width: 12px; height: 12px; border-width: 2px; font-size: 0; }
   .pin.custom-pin { border-style: dashed; }
+  .pin.search-pin { background: #0f766e; }
+  .leaflet-tooltip.search-label { font-size: 12px; padding: 2px 8px; white-space: nowrap; }
   .pin.pin-start { box-shadow: 0 0 0 4px rgba(15, 118, 110, .28), 0 2px 6px rgba(0, 0, 0, .35); }
   .leaflet-tooltip.qty {
     background: rgba(255,255,255,.92); border: 1px solid var(--line); color: #334155;
@@ -283,8 +285,13 @@
   <aside>
     <div id="sidebar"></div>
     <div id="addBar">
+      <div class="search-row">
+        <input type="text" id="topSearch" placeholder="🔍 搜地名 / 饭店，如：Flinders Street Station">
+        <button onclick="doTopSearch()">搜索</button>
+      </div>
+      <div class="search-results" id="topResults"></div>
       <button id="addBtn" onclick="toggleAddMode()">➕ 点击地图添加打卡点</button>
-      <div id="addHint">新增点会自动插入最顺路的位置，饭店 / 景点 / 咖啡店均可</div>
+      <div id="addHint">搜索选中的地点默认加到所选行程末尾（可用 ⬆⬇ 调整）；点击地图添加的点会自动插入最顺路的位置</div>
     </div>
   </aside>
   <div id="map"></div>
@@ -302,6 +309,9 @@
       <button onclick="doSearch()">搜索</button>
     </div>
     <div class="search-results" id="searchResults"></div>
+
+    <label id="fDayLabel">📅 添加到哪一天（默认排在行程末尾）</label>
+    <select id="fDay"></select>
 
     <label>名称 *</label>
     <input type="text" id="fName" placeholder="如：Uncle 丹德农街店 · 早午餐">
@@ -528,6 +538,9 @@ function applyLayerGate() {
   rebuildLayerCtrl();
 }
 map.on("moveend", applyLayerGate);
+map.on("zoomend", () => { // 同坐标 Pin 的错开量随新比例尺重算
+  shiftedPins.forEach(e => e.m.setIcon(markerIcon(e.p, e.i, e.color, e.small, dupShiftPx(e.p.coords[0], e.dup))));
+});
 
 if (hasTdKey) {
   tdStreetGroup.addTo(map);
@@ -884,6 +897,13 @@ async function renderSidebar(seq) {
   el.innerHTML = html;
 }
 
+// 同坐标站点的错开量按地图比例换算：目标约 60 米间距——放大时拉开、缩小时并拢，
+// 避免固定像素偏移在小比例尺下把 Pin"悬浮"到真实位置几公里之外
+function dupShiftPx(lat, dup) {
+  const metersPerPx = 156543.03392 * Math.cos(lat * Math.PI / 180) / 2 ** map.getZoom();
+  return Math.min(dup * 26, Math.round(60 / metersPerPx));
+}
+
 function markerIcon(p, idx, color, small, shiftX) {
   const shift = shiftX ? `transform:translate(${shiftX}px,0);` : "";
   return L.divIcon({
@@ -907,9 +927,12 @@ function bindMarker(m, p, dayId, idx, isLoopEnd) {
   });
 }
 
+let shiftedPins = []; // 同坐标错开的 Pin，缩放后按新比例重设偏移
+
 async function renderMap(seq) {
   if (markersLayer) map.removeLayer(markersLayer);
   if (linesLayer) map.removeLayer(linesLayer);
+  shiftedPins = [];
   // 捕获本次渲染的图层引用：迟到的旧渲染只会画进已脱离地图的组，不会污染新视图
   const myMarkers = markersLayer = L.layerGroup().addTo(map);
   const myLines = linesLayer = L.layerGroup().addTo(map);
@@ -952,11 +975,13 @@ async function renderMap(seq) {
       const dup = seen.get(key) || 0;
       seen.set(key, dup + 1);
       const isLoopEnd = dup > 0 && i === day.places.length - 1;
+      const pinColor = TYPES[p.type] ? TYPES[p.type].color : "#334155";
       const m = L.marker(p.coords, {
-        icon: markerIcon(p, i, TYPES[p.type] ? TYPES[p.type].color : "#334155", opts.small, dup > 0 ? dup * 26 : 0),
+        icon: markerIcon(p, i, pinColor, opts.small, dup > 0 ? dupShiftPx(p.coords[0], dup) : 0),
         draggable: !!opts.interactive,
         opacity: opts.dim ? .45 : 1,
       }).addTo(myMarkers);
+      if (dup > 0) shiftedPins.push({ m, p, i, color: pinColor, small: opts.small, dup });
       if (opts.interactive) bindMarker(m, p, day.id, i, isLoopEnd);
       else m.bindTooltip(`${day.date} · ${p.name}`, { direction: "top", className: "qty" });
       if (!opts.dim) bounds.extend(p.coords);
@@ -1003,17 +1028,25 @@ fillTypeSelect(document.getElementById("fType"));
 
 function openModal(ctx) {
   modalCtx = ctx;
-  document.getElementById("modalTitle").textContent = ctx.index != null ? "编辑打卡点" : "添加打卡点";
+  const adding = ctx.index == null;
+  document.getElementById("modalTitle").textContent = adding ? "添加打卡点" : "编辑打卡点";
   document.getElementById("modalCoord").textContent = `坐标：${ctx.coords[0].toFixed(5)}, ${ctx.coords[1].toFixed(5)}（加入后可在地图上拖动微调）`;
   document.getElementById("searchResults").innerHTML = "";
   document.getElementById("searchInput").value = "";
+  // 行程选择：仅新增时显示（编辑不跨天移动）；默认当天，搜索流程默认追加到末尾
+  document.getElementById("fDayLabel").style.display = adding ? "" : "none";
+  document.getElementById("fDay").style.display = adding ? "" : "none";
+  if (adding) {
+    document.getElementById("fDay").innerHTML = state.days.map(d =>
+      `<option value="${d.id}" ${d.id === ctx.dayId ? "selected" : ""}>${d.date} · ${d.title}</option>`).join("");
+  }
   if (ctx.index != null) {
     const p = getDay(ctx.dayId).places[ctx.index];
     document.getElementById("fName").value = p.name;
     document.getElementById("fType").value = p.type;
     document.getElementById("fDesc").value = p.desc || "";
   } else {
-    document.getElementById("fName").value = "";
+    document.getElementById("fName").value = ctx.name || "";
     document.getElementById("fType").value = "food";
     document.getElementById("fDesc").value = "";
   }
@@ -1027,53 +1060,127 @@ function saveModal() {
   if (!modalCtx) return;
   const name = document.getElementById("fName").value.trim();
   if (!name) { toast("请填写地点名称"); return; }
-  const day = getDay(modalCtx.dayId);
   const data = {
     name,
     type: document.getElementById("fType").value,
     desc: document.getElementById("fDesc").value.trim(),
   };
+  let dayId = modalCtx.dayId;
   if (modalCtx.index != null) {
-    Object.assign(day.places[modalCtx.index], data);
+    Object.assign(getDay(dayId).places[modalCtx.index], data);
   } else {
-    const idx = bestInsertIndex(day, modalCtx.coords);
-    day.places.splice(idx, 0, {
-      id: "cp_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      ...data, coords: modalCtx.coords, blueprint: false,
-    });
-    toast(`已插入 ${day.date} 第 ${idx + 1} 站（按顺路原则），路线重算中…`);
+    dayId = document.getElementById("fDay").value;
+    const day = getDay(dayId);
+    if (modalCtx.append) {
+      day.places.push({
+        id: "cp_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        ...data, coords: modalCtx.coords, blueprint: false,
+      });
+      toast(`已添加到 ${day.date} 行程末尾，可用卡片 ⬆⬇ 调整顺序，路线重算中…`);
+    } else {
+      const idx = bestInsertIndex(day, modalCtx.coords);
+      day.places.splice(idx, 0, {
+        id: "cp_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        ...data, coords: modalCtx.coords, blueprint: false,
+      });
+      toast(`已插入 ${day.date} 第 ${idx + 1} 站（按顺路原则），路线重算中…`);
+    }
+    if (searchPin) { searchPin.remove(); searchPin = null; } // 正式编号 Pin 接管
   }
-  invalidateRoute(day.id);
+  invalidateRoute(dayId);
   save(); closeModal(); render();
 }
 
-/* ================= 搜索（Nominatim，仅澳大利亚） ================= */
+/* ================= 地点搜索 =================
+ * 主源 Photon（komoot，OSM 数据、支持 CORS、国内可达性较好），备选 Nominatim；
+ * OSM 系服务在国内网络下可能整体不可达，两个源都失败时才提示暂不可用。
+ * bbox 限定澳大利亚范围，并用当前视野中心做邻近偏置 */
 
+async function searchPlaces(q) {
+  const c = map.getCenter();
+  try {
+    const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&bbox=112.9,-44.6,153.8,-10.5&lat=${c.lat.toFixed(4)}&lon=${c.lng.toFixed(4)}`);
+    if (res.ok) {
+      const list = (await res.json()).features || [];
+      const out = list.filter(f => f.geometry && f.geometry.coordinates).map(f => {
+        const pr = f.properties || {};
+        const sub = [pr.street, pr.city || pr.district, pr.state, pr.country].filter(Boolean).join(", ");
+        return { name: pr.name || pr.street || q, sub: sub || pr.osm_value || "", lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+      }).filter(r => r.name);
+      if (out.length) return out;
+    }
+  } catch (e) { /* 网络失败时落到备选源 */ }
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&countrycodes=au&limit=6&accept-language=zh-CN`);
+  const list = await res.json();
+  return list.map(it => ({
+    name: it.display_name.split(",")[0],
+    sub: it.display_name.split(",").slice(1, 4).join(",").trim(),
+    lat: +it.lat, lon: +it.lon,
+  }));
+}
+
+function renderResults(box, list, onPick) {
+  box.innerHTML = "";
+  for (const r of list) {
+    const div = document.createElement("div");
+    div.className = "sr";
+    div.innerHTML = `${esc(r.name)}<div class="sr-sub">${esc(r.sub)} · ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</div>`;
+    div.onclick = () => { box.innerHTML = ""; onPick(r); };
+    box.appendChild(div);
+  }
+}
+
+/* --- 顶部搜索（Google Maps 式）：选结果后在地图上插入带地名标签的 Pin，并询问加入哪一天 --- */
+let searchPin = null; // 搜索落点临时标记，保存进行程后由正式编号 Pin 接管
+
+function dropSearchPin(r) {
+  if (searchPin) searchPin.remove();
+  searchPin = L.marker([r.lat, r.lon], {
+    icon: L.divIcon({
+      className: "",
+      html: `<div class="pin search-pin">📍</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14],
+    }),
+    zIndexOffset: 1000,
+  }).addTo(map)
+    .bindTooltip(r.name, { permanent: true, direction: "right", className: "qty search-label", offset: [14, 0] })
+    .bindPopup(`<div class="popup-body"><h4>📍 ${esc(r.name)}</h4><div class="p-type">${esc(r.sub)}</div></div>`);
+  map.flyTo([r.lat, r.lon], Math.max(map.getZoom(), 15));
+}
+
+async function doTopSearch() {
+  const q = document.getElementById("topSearch").value.trim();
+  if (!q) return;
+  const box = document.getElementById("topResults");
+  box.innerHTML = `<div class="sr sr-sub">搜索中…</div>`;
+  try {
+    const list = await searchPlaces(q);
+    if (!list.length) { box.innerHTML = `<div class="sr sr-sub">没有找到「${esc(q)}」，换个关键词试试</div>`; return; }
+    renderResults(box, list, r => {
+      dropSearchPin(r);
+      openModal({ dayId: currentDayId === "overview" ? state.days[0].id : currentDayId, coords: [r.lat, r.lon], append: true, name: r.name });
+    });
+  } catch (e) {
+    box.innerHTML = `<div class="sr sr-sub">搜索服务暂不可用（当前网络可能无法访问 OSM 系服务），可点击地图手动添加</div>`;
+  }
+}
+document.getElementById("topSearch").addEventListener("keydown", e => { if (e.key === "Enter") doTopSearch(); });
+
+/* --- 模态框内搜索：选结果仅回填坐标与名称 --- */
 async function doSearch() {
   const q = document.getElementById("searchInput").value.trim();
   if (!q) return;
   const box = document.getElementById("searchResults");
   box.innerHTML = `<div class="sr sr-sub">搜索中…</div>`;
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&countrycodes=au&limit=6&accept-language=zh-CN`);
-    const list = await res.json();
+    const list = await searchPlaces(q);
     if (!list.length) { box.innerHTML = `<div class="sr sr-sub">没有找到结果，可以直接填名称后保存，再拖动 Pin 修正位置</div>`; return; }
-    box.innerHTML = "";
-    for (const it of list) {
-      const div = document.createElement("div");
-      div.className = "sr";
-      div.innerHTML = `${esc(it.display_name.split(",").slice(0, 2).join(","))}<div class="sr-sub">${esc(it.display_name.split(",").slice(2, 5).join(",").trim())} · ${(+it.lat).toFixed(4)}, ${(+it.lon).toFixed(4)}</div>`;
-      div.onclick = () => {
-        if (!modalCtx) return;
-        modalCtx.coords = [+it.lat, +it.lon];
-        document.getElementById("modalCoord").textContent = `坐标：${(+it.lat).toFixed(5)}, ${(+it.lon).toFixed(5)}（来自搜索结果）`;
-        if (!document.getElementById("fName").value) {
-          document.getElementById("fName").value = it.display_name.split(",")[0];
-        }
-        box.innerHTML = "";
-      };
-      box.appendChild(div);
-    }
+    renderResults(box, list, r => {
+      if (!modalCtx) return;
+      modalCtx.coords = [r.lat, r.lon];
+      document.getElementById("modalCoord").textContent = `坐标：${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}（来自搜索结果）`;
+      if (!document.getElementById("fName").value) document.getElementById("fName").value = r.name;
+    });
   } catch (e) {
     box.innerHTML = `<div class="sr sr-sub">搜索服务暂不可用，可直接填名称保存后拖动 Pin 定位</div>`;
   }
