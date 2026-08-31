@@ -223,17 +223,55 @@
   }
   .modal textarea { resize: vertical; min-height: 70px; }
   .modal .coord-tag { font-size: 12px; color: var(--brand); background: #f0fdfa; border-radius: 6px; padding: 4px 8px; display: inline-block; }
-  .search-row { display: flex; gap: 6px; }
-  .search-row input { flex: 1; }
-  .search-row button {
-    border: none; background: #e2e8f0; border-radius: 8px; padding: 0 14px; cursor: pointer; font-size: 13px;
+  /* ---------- 地点搜索（顶栏 & 弹窗共用） ---------- */
+  .search-box {
+    display: flex; align-items: center; gap: 6px; width: 100%;
+    border: 1.5px solid var(--line); border-radius: 999px; background: #fff;
+    padding: 3px 3px 3px 12px; transition: border-color .15s, box-shadow .15s;
   }
-  .search-results { margin-top: 6px; }
-  .search-results .sr {
-    padding: 6px 8px; border-radius: 8px; font-size: 12px; cursor: pointer; line-height: 1.5;
+  .search-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
+  .search-box .s-ico { font-size: 13px; color: var(--ink-2); flex: none; }
+  .search-box input {
+    flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+    font-size: 13px; font-family: inherit; color: var(--ink); padding: 7px 0;
   }
-  .search-results .sr:hover { background: #f1f5f9; }
-  .search-results .sr .sr-sub { color: var(--ink-2); font-size: 11px; }
+  .search-box input::placeholder { color: #94a3b8; }
+  .search-box .s-go {
+    flex: none; border: none; border-radius: 999px; padding: 6px 15px; cursor: pointer;
+    background: var(--brand); color: #fff; font-size: 12px; font-weight: 600;
+  }
+  .search-box .s-go:hover { background: #115e59; }
+  .modal .search-box { margin-top: 2px; }
+  .modal .search-box input[type=text] { border: none; padding: 7px 0; width: auto; border-radius: 0; }
+
+  .search-results {
+    margin-top: 8px; border: 1px solid var(--line); border-radius: 12px;
+    background: #fff; overflow: hidden auto; max-height: 240px; scrollbar-width: thin;
+  }
+  .search-results:empty { display: none; }
+  .sr-head {
+    position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 8px 6px 12px; background: #f8fafc; border-bottom: 1px solid var(--line);
+    font-size: 11px; color: var(--ink-2);
+  }
+  .sr-close {
+    border: none; background: transparent; color: var(--ink-2); cursor: pointer;
+    width: 20px; height: 20px; border-radius: 50%; font-size: 14px; line-height: 1;
+  }
+  .sr-close:hover { background: #e2e8f0; color: var(--ink); }
+  .search-results .sr { padding: 8px 10px 8px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .search-results .sr + .sr { border-top: 1px solid #f1f5f9; }
+  .search-results .sr:hover { background: #f8fafc; }
+  .search-results .sr.active { border-left-color: var(--brand); background: #f0fdfa; }
+  .sr-main { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--ink); }
+  .sr-add {
+    margin-left: auto; flex: none; border: 1px solid var(--brand); color: var(--brand); background: #fff;
+    border-radius: 999px; font-size: 11px; padding: 2px 9px; cursor: pointer; opacity: 0; transition: opacity .15s;
+  }
+  .sr:hover .sr-add, .sr.active .sr-add { opacity: 1; }
+  .sr-add:hover { background: var(--brand); color: #fff; }
+  .sr-sub { color: var(--ink-2); font-size: 11px; margin-top: 2px; }
+  .search-results .sr-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-2); line-height: 1.5; }
   .modal .btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   .modal .btn-row button {
     border-radius: 8px; padding: 8px 18px; font-size: 13px; cursor: pointer; border: none;
@@ -285,13 +323,14 @@
   <aside>
     <div id="sidebar"></div>
     <div id="addBar">
-      <div class="search-row">
-        <input type="text" id="topSearch" placeholder="🔍 搜地名 / 饭店，如：Flinders Street Station">
-        <button onclick="doTopSearch()">搜索</button>
+      <div class="search-box">
+        <span class="s-ico">🔍</span>
+        <input type="text" id="topSearch" placeholder="搜地名 / 饭店，如 Flinders Street Station">
+        <button class="s-go" onclick="doTopSearch()">搜索</button>
       </div>
       <div class="search-results" id="topResults"></div>
       <button id="addBtn" onclick="toggleAddMode()">➕ 点击地图添加打卡点</button>
-      <div id="addHint">搜索选中的地点默认加到所选行程末尾（可用 ⬆⬇ 调整）；点击地图添加的点会自动插入最顺路的位置</div>
+      <div id="addHint">结果点击预览、「＋ 加入」所选行程末尾；点击地图添加的点会自动插入最顺路的位置</div>
     </div>
   </aside>
   <div id="map"></div>
@@ -304,9 +343,9 @@
     <span class="coord-tag" id="modalCoord">尚未选择坐标</span>
 
     <label>🔍 按名称搜索地点（澳大利亚范围内，搜到自动填坐标）</label>
-    <div class="search-row">
+    <div class="search-box">
       <input type="text" id="searchInput" placeholder="如：Flinders Street Station / Lunch 莫宁顿">
-      <button onclick="doSearch()">搜索</button>
+      <button class="s-go" onclick="doSearch()">搜索</button>
     </div>
     <div class="search-results" id="searchResults"></div>
 
@@ -1119,13 +1158,43 @@ async function searchPlaces(q) {
   }));
 }
 
-function renderResults(box, list, onPick) {
+/* 结果列表：点击行 = 地图预览（列表保留、行高亮）；「＋ 加入」= 走添加弹窗；
+ * 关闭列表只能由用户点 × 决定 */
+function renderResults(box, list, onPick, onAdd, onClose) {
   box.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "sr-head";
+  head.innerHTML = `<span>找到 ${list.length} 个地点 · 点击预览</span>`;
+  const close = document.createElement("button");
+  close.className = "sr-close";
+  close.title = "关闭结果列表";
+  close.textContent = "×";
+  close.onclick = () => { box.innerHTML = ""; if (onClose) onClose(); };
+  head.appendChild(close);
+  box.appendChild(head);
   for (const r of list) {
     const div = document.createElement("div");
     div.className = "sr";
-    div.innerHTML = `${esc(r.name)}<div class="sr-sub">${esc(r.sub)} · ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</div>`;
-    div.onclick = () => { box.innerHTML = ""; onPick(r); };
+    const main = document.createElement("div");
+    main.className = "sr-main";
+    main.textContent = r.name;
+    if (onAdd) {
+      const add = document.createElement("button");
+      add.className = "sr-add";
+      add.title = "加入行程";
+      add.textContent = "＋ 加入";
+      add.onclick = ev => { ev.stopPropagation(); onAdd(r); };
+      main.appendChild(add);
+    }
+    const sub = document.createElement("div");
+    sub.className = "sr-sub";
+    sub.textContent = `${r.sub} · ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}`;
+    div.append(main, sub);
+    div.onclick = () => {
+      box.querySelectorAll(".sr.active").forEach(x => x.classList.remove("active"));
+      div.classList.add("active");
+      onPick(r);
+    };
     box.appendChild(div);
   }
 }
@@ -1152,16 +1221,16 @@ async function doTopSearch() {
   const q = document.getElementById("topSearch").value.trim();
   if (!q) return;
   const box = document.getElementById("topResults");
-  box.innerHTML = `<div class="sr sr-sub">搜索中…</div>`;
+  box.innerHTML = `<div class="sr-empty">搜索中…</div>`;
   try {
     const list = await searchPlaces(q);
-    if (!list.length) { box.innerHTML = `<div class="sr sr-sub">没有找到「${esc(q)}」，换个关键词试试</div>`; return; }
-    renderResults(box, list, r => {
-      dropSearchPin(r);
-      openModal({ dayId: currentDayId === "overview" ? state.days[0].id : currentDayId, coords: [r.lat, r.lon], append: true, name: r.name });
-    });
+    if (!list.length) { box.innerHTML = `<div class="sr-empty">没有找到「${esc(q)}」，换个关键词试试</div>`; return; }
+    renderResults(box, list,
+      r => dropSearchPin(r),
+      r => openModal({ dayId: currentDayId === "overview" ? state.days[0].id : currentDayId, coords: [r.lat, r.lon], append: true, name: r.name }),
+      () => { if (searchPin) { searchPin.remove(); searchPin = null; } }); // × 关闭时移除预览 Pin
   } catch (e) {
-    box.innerHTML = `<div class="sr sr-sub">搜索服务暂不可用（当前网络可能无法访问 OSM 系服务），可点击地图手动添加</div>`;
+    box.innerHTML = `<div class="sr-empty">搜索服务暂不可用（当前网络可能无法访问 OSM 系服务），可点击地图手动添加</div>`;
   }
 }
 document.getElementById("topSearch").addEventListener("keydown", e => { if (e.key === "Enter") doTopSearch(); });
@@ -1171,10 +1240,10 @@ async function doSearch() {
   const q = document.getElementById("searchInput").value.trim();
   if (!q) return;
   const box = document.getElementById("searchResults");
-  box.innerHTML = `<div class="sr sr-sub">搜索中…</div>`;
+  box.innerHTML = `<div class="sr-empty">搜索中…</div>`;
   try {
     const list = await searchPlaces(q);
-    if (!list.length) { box.innerHTML = `<div class="sr sr-sub">没有找到结果，可以直接填名称后保存，再拖动 Pin 修正位置</div>`; return; }
+    if (!list.length) { box.innerHTML = `<div class="sr-empty">没有找到结果，可以直接填名称后保存，再拖动 Pin 修正位置</div>`; return; }
     renderResults(box, list, r => {
       if (!modalCtx) return;
       modalCtx.coords = [r.lat, r.lon];
@@ -1182,7 +1251,7 @@ async function doSearch() {
       if (!document.getElementById("fName").value) document.getElementById("fName").value = r.name;
     });
   } catch (e) {
-    box.innerHTML = `<div class="sr sr-sub">搜索服务暂不可用，可直接填名称保存后拖动 Pin 定位</div>`;
+    box.innerHTML = `<div class="sr-empty">搜索服务暂不可用，可直接填名称保存后拖动 Pin 定位</div>`;
   }
 }
 document.getElementById("searchInput").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
