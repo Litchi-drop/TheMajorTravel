@@ -1,3 +1,14 @@
 *.png
 readme.txt
 gui-test-screenshots/
+
+# 后端（Go）本地环境与构建产物
+backend/.env
+backend/bin/
+
+# 前端（Vue）
+node_modules/
+dist/
+
+# GoLand / IDE
+.idea/

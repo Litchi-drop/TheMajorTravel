@@ -1,0 +1,19 @@
+# PostgreSQL 使用本机原生 Windows 服务（postgresql-x64-16），开发库 major_travel；
+# 本文件仅负责 Redis。连接参数见 .env 的 MT_PG_DSN
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: majortravel-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  redisdata:
