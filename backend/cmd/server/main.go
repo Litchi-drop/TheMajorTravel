@@ -15,6 +15,7 @@ import (
 	"github.com/Litchi-drop/TheMajorTravel/backend/internal/config"
 	"github.com/Litchi-drop/TheMajorTravel/backend/internal/handler"
 	"github.com/Litchi-drop/TheMajorTravel/backend/internal/repository"
+	"github.com/Litchi-drop/TheMajorTravel/backend/seed"
 )
 
 func main() {
@@ -29,6 +30,9 @@ func main() {
 	}
 	if err := repository.Migrate(db); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
+	}
+	if err := seed.Load(db); err != nil {
+		log.Fatalf("蓝本种子写入失败: %v", err)
 	}
 
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})

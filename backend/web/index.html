@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MajorTravel · 协作版（过渡页）</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --card: #fff; --ink: #1f2937; --sub: #6b7280;
+    --line: #e5e7eb; --brand: #4f46e5; --brand-soft: #eef2ff; --ok: #059669; --warn: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--ink); }
+  button { font: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 8px 14px; }
+  input, select, textarea {
+    font: inherit; width: 100%; padding: 9px 11px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+  label { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 5px; }
+
+  /* ---- 登录/注册 ---- */
+  #auth { max-width: 400px; margin: 9vh auto; background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 28px; box-shadow: 0 8px 30px rgba(31,41,55,.06); }
+  #auth h1 { font-size: 20px; margin-bottom: 4px; }
+  #auth .tagline { color: var(--sub); font-size: 13px; margin-bottom: 8px; }
+  .tabs { display: flex; gap: 6px; background: var(--bg); border-radius: 10px; padding: 4px; margin: 14px 0 4px; }
+  .tabs button { flex: 1; background: transparent; color: var(--sub); border-radius: 8px; }
+  .tabs button.on { background: var(--card); color: var(--brand); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .primary { width: 100%; margin-top: 18px; background: var(--brand); color: #fff; font-weight: 600; }
+  .primary:disabled { opacity: .6; cursor: wait; }
+  .hint { margin-top: 12px; font-size: 12px; color: var(--sub); text-align: center; }
+
+  /* ---- 应用 ---- */
+  #app { display: none; max-width: 860px; margin: 0 auto; padding: 22px 16px 60px; }
+  header.bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  header.bar h1 { font-size: 20px; }
+  header.bar .meta { color: var(--sub); font-size: 13px; }
+  header.bar .spacer { flex: 1; }
+  .me { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 6px 5px 12px; font-size: 14px; }
+  .me button { padding: 5px 10px; background: var(--bg); color: var(--sub); border-radius: 999px; }
+  .sync { font-size: 12px; color: var(--sub); }
+
+  section.day { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 14px; border-left: 5px solid var(--brand); }
+  .day-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .day-head .d { font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .day-head h2 { font-size: 16px; }
+  .day-head .add { margin-left: auto; font-size: 13px; background: var(--brand-soft); color: var(--brand); padding: 5px 12px; }
+
+  .place { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: #fcfcfd; }
+  .place .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .place .icon { font-size: 17px; }
+  .place .name { font-weight: 600; }
+  .place .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); }
+  .place .badge.ferry { background: #ecfeff; color: #0e7490; }
+  .place .ops { margin-left: auto; display: flex; gap: 6px; }
+  .place .ops button { padding: 4px 10px; font-size: 12px; background: var(--bg); color: var(--sub); }
+  .place .ops button:hover { background: var(--brand-soft); color: var(--brand); }
+  .place .ops button.del:hover { background: #fee2e2; color: var(--warn); }
+  .place .desc { font-size: 13px; color: var(--sub); margin-top: 6px; line-height: 1.55; }
+  .place .foot { font-size: 12px; color: #9ca3af; margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---- 弹层 ---- */
+  .overlay { position: fixed; inset: 0; background: rgba(17,24,39,.45); display: none;
+    align-items: flex-start; justify-content: center; padding: 6vh 16px; z-index: 10; }
+  .overlay.show { display: flex; }
+  .modal { background: var(--card); border-radius: 16px; padding: 22px 24px; width: 100%;
+    max-width: 460px; max-height: 84vh; overflow: auto; }
+  .modal h3 { font-size: 16px; margin-bottom: 6px; }
+  .modal .close { float: right; background: none; color: var(--sub); font-size: 18px; padding: 0 4px; }
+  .rev { border-bottom: 1px solid var(--line); padding: 10px 0; font-size: 13px; }
+  .rev:last-child { border-bottom: none; }
+  .rev .who { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .rev .act { font-size: 11px; padding: 1px 8px; border-radius: 999px; }
+  .act.create { background: #ecfdf5; color: var(--ok); }
+  .act.update { background: var(--brand-soft); color: var(--brand); }
+  .act.delete { background: #fee2e2; color: var(--warn); }
+  .rev .line { color: var(--sub); margin-top: 4px; padding-left: 12px; }
+  .rev .line b { color: var(--ink); font-weight: 600; }
+
+  #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 28px; z-index: 20;
+    background: #111827; color: #fff; font-size: 14px; padding: 10px 18px; border-radius: 10px;
+    display: none; max-width: 86vw; }
+  .err-box { display: none; margin-top: 12px; padding: 9px 12px; border-radius: 8px;
+    background: #fef2f2; color: var(--warn); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ============ 登录 / 注册 ============ -->
+<div id="auth">
+  <h1>🌏 MajorTravel 协作版</h1>
+  <div class="tagline">墨尔本国庆之旅 · 四人共享行程（过渡页，正式界面 Step 3 上线）</div>
+  <div class="tabs">
+    <button id="tabLogin" class="on" onclick="switchTab('login')">登录</button>
+    <button id="tabReg" onclick="switchTab('reg')">注册</button>
+  </div>
+
+  <form id="loginForm" onsubmit="return doLogin(event)">
+    <label>邮箱</label>
+    <input id="liEmail" type="email" required autocomplete="username">
+    <label>密码</label>
+    <input id="liPwd" type="password" required autocomplete="current-password">
+    <button class="primary" type="submit">登录</button>
+  </form>
+
+  <form id="regForm" style="display:none" onsubmit="return doRegister(event)">
+    <label>邮箱</label>
+    <input id="rgEmail" type="email" required autocomplete="username">
+    <label>密码（至少 8 位）</label>
+    <input id="rgPwd" type="password" minlength="8" required autocomplete="new-password">
+    <label>昵称（2~16 字，行程里显示这个名字）</label>
+    <input id="rgNick" required maxlength="16">
+    <label>邀请码（向发起人索取）</label>
+    <input id="rgInvite" required>
+    <button class="primary" type="submit">注册</button>
+  </form>
+
+  <div id="authErr" class="err-box"></div>
+  <div class="hint">开发模式：邮箱验证码未开启，注册无需验证码</div>
+</div>
+
+<!-- ============ 行程主界面 ============ -->
+<div id="app">
+  <header class="bar">
+    <div>
+      <h1 id="tripTitle"></h1>
+      <div class="meta" id="tripMeta"></div>
+    </div>
+    <div class="spacer"></div>
+    <span class="sync" id="sync"></span>
+    <div class="me"><span id="meInfo"></span><button onclick="logout()">退出</button></div>
+  </header>
+  <div id="days"></div>
+</div>
+
+<!-- ============ 点位编辑/新建 ============ -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <button class="close" onclick="closeModal('editOverlay')">✕</button>
+    <h3 id="editTitle">编辑点位</h3>
+    <form onsubmit="return savePlace(event)">
+      <label>名称</label>
+      <input id="fName" required maxlength="100">
+      <label>类型</label>
+      <select id="fType"></select>
+      <label>所在天</label>
+      <select id="fDay"></select>
+      <label>纬度 lat</label>
+      <input id="fLat" type="number" step="any" required>
+      <label>经度 lng</label>
+      <input id="fLng" type="number" step="any" required>
+      <label>顺序（小的排前面）</label>
+      <input id="fSort" type="number" step="1">
+      <label>备注</label>
+      <textarea id="fDesc" rows="3"></textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px">
+        <input type="checkbox" id="fFerry" style="width:auto"> 到达这一站的路段为轮渡
+      </label>
+      <button class="primary" type="submit">保存</button>
+      <div id="editErr" class="err-box"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ 修改历史 ============ -->
+<div class="overlay" id="revOverlay">
+  <div class="modal">
+    <button class="close" onclick="closeModal('revOverlay')">✕</button>
+    <h3 id="revTitle">修改历史</h3>
+    <div id="revList" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------- 常量与状态 ---------- */
+const TOKEN_KEY = "mt_token";
+const TYPES = {
+  food:    { label: "餐饮",     icon: "🍜" },
+  sight:   { label: "景点",     icon: "📍" },
+  nature:  { label: "自然",     icon: "🌊" },
+  shopping:{ label: "购物",     icon: "🛍️" },
+  hotel:   { label: "住宿",     icon: "🏨" },
+  traffic: { label: "交通枢纽", icon: "✈️" },
+};
+const FIELD_LABEL = { name: "名称", type: "类型", lat: "纬度", lng: "经度", desc: "备注",
+  ferry: "轮渡", dayId: "所在天", sortOrder: "顺序" };
+
+let me = null;          // 当前登录用户
+let trip = null;        // GET /api/trip 缓存
+let lastVersion = -1;   // 轮询基线
+let editingId = null;   // null = 新建
+let pollTimer = null;
+
+/* ---------- 基础工具 ---------- */
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 2600);
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = "block"; }
+function clearErr(id) { document.getElementById(id).style.display = "none"; }
+function fmtTime(iso) {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
+  catch { return iso; }
+}
+
+async function api(path, opts = {}) {
+  const headers = { "Content-Type": "application/json" };
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) headers.Authorization = "Bearer " + token;
+  const res = await fetch(path, { ...opts, headers });
+  let body = null;
+  try { body = await res.json(); } catch { /* 非 JSON */ }
+  if (res.status === 401 && !path.endsWith("/login")) {
+    localStorage.removeItem(TOKEN_KEY);
+    showAuth();
+    throw new Error(body?.error || "请先登录");
+  }
+  if (!res.ok || !body?.ok) throw new Error(body?.error || "请求失败，请稍后再试");
+  return body.data;
+}
+
+/* ---------- 登录 / 注册 ---------- */
+function switchTab(which) {
+  const on = which === "login";
+  document.getElementById("tabLogin").classList.toggle("on", on);
+  document.getElementById("tabReg").classList.toggle("on", !on);
+  document.getElementById("loginForm").style.display = on ? "" : "none";
+  document.getElementById("regForm").style.display = on ? "none" : "";
+  clearErr("authErr");
+}
+async function doLogin(e) {
+  e.preventDefault(); clearErr("authErr");
+  try {
+    const data = await api("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: liEmail.value.trim(), password: liPwd.value }),
+    });
+    localStorage.setItem(TOKEN_KEY, data.token);
+    liPwd.value = "";
+    await enterApp();
+  } catch (err) { showErr("authErr", err.message); }
+  return false;
+}
+async function doRegister(e) {
+  e.preventDefault(); clearErr("authErr");
+  try {
+    await api("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        email: rgEmail.value.trim(), password: rgPwd.value,
+        nickname: rgNick.value.trim(), inviteCode: rgInvite.value.trim(),
+      }),
+    });
+    toast("注册成功，请登录");
+    switchTab("login");
+    liEmail.value = rgEmail.value.trim();
+    liPwd.value = "";
+  } catch (err) { showErr("authErr", err.message); }
+  return false;
+}
+async function logout() {
+  try { await api("/api/auth/logout", { method: "POST" }); } catch { /* token 已失效也无妨 */ }
+  localStorage.removeItem(TOKEN_KEY);
+  clearInterval(pollTimer);
+  showAuth();
+}
+function showAuth() {
+  document.getElementById("auth").style.display = "";
+  document.getElementById("app").style.display = "none";
+}
+
+/* ---------- 应用主流程 ---------- */
+async function enterApp() {
+  me = await api("/api/me");
+  document.getElementById("meInfo").textContent = `${me.avatarEmoji || "🙂"} ${me.nickname}`;
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("app").style.display = "";
+  await loadTrip();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(pollVersion, 30000);              // 30s 轮询版本号
+  document.onvisibilitychange = () => { if (!document.hidden) pollVersion(); };
+}
+
+async function loadTrip() {
+  trip = await api("/api/trip");
+  document.getElementById("tripTitle").textContent = trip.title;
+  document.getElementById("tripMeta").textContent =
+    `${trip.startDate} ~ ${trip.endDate} · ${trip.days.length} 天 ${trip.places.length} 个点位 · 更新于 ${fmtTime(trip.updatedAt)}`;
+  renderDays();
+  const v = await api("/api/trip/version");
+  lastVersion = v.version;
+  document.getElementById("sync").textContent = `已同步 · v${v.version}`;
+}
+
+async function pollVersion() {
+  if (!localStorage.getItem(TOKEN_KEY)) return;
+  try {
+    const v = await api("/api/trip/version");
+    if (v.version !== lastVersion) {
+      lastVersion = v.version;
+      trip = await api("/api/trip");
+      renderDays();
+      document.getElementById("sync").textContent = `有家人刚改了行程，已更新 · v${v.version}`;
+      document.getElementById("tripMeta").textContent =
+        `${trip.startDate} ~ ${trip.endDate} · ${trip.days.length} 天 ${trip.places.length} 个点位 · 更新于 ${fmtTime(trip.updatedAt)}`;
+    }
+  } catch { /* 网络抖动忽略，下轮再试 */ }
+}
+
+/* ---------- 渲染 ---------- */
+function renderDays() {
+  const byDay = {};
+  for (const p of trip.places) (byDay[p.dayId] ||= []).push(p);
+  document.getElementById("days").innerHTML = trip.days.map(d => `
+    <section class="day" style="border-left-color:${esc(d.color)}">
+      <div class="day-head">
+        <span class="d">${esc(d.date)}</span><h2>${esc(d.title)}</h2>
+        <button class="add" onclick="openEdit(null, ${d.id})">＋ 添加点位</button>
+      </div>
+      ${(byDay[d.id] || []).map(placeCard).join("") || `<div style="color:var(--sub);font-size:13px;padding:6px 0">这一天还没有点位</div>`}
+    </section>`).join("");
+}
+
+function placeCard(p) {
+  const t = TYPES[p.type] || { label: p.type, icon: "📌" };
+  const by = p.updatedBy
+    ? `最后由 ${esc(p.updatedByAvatar || "")} ${esc(p.updatedByName || "已注销用户")} 修改${p.updatedAt ? " · " + fmtTime(p.updatedAt) : ""}`
+    : "蓝本数据（尚未有人修改）";
+  return `
+    <div class="place">
+      <div class="row">
+        <span class="icon">${t.icon}</span>
+        <span class="name">${esc(p.name)}</span>
+        <span class="badge">${t.label}</span>
+        ${p.ferry ? '<span class="badge ferry">⛴️ 轮渡段</span>' : ""}
+        <span class="ops">
+          <button onclick="openEdit(${p.id})">编辑</button>
+          <button onclick="openHistory(${p.id}, '${esc(p.name).replace(/'/g, "&#39;")}')">历史</button>
+          <button class="del" onclick="removePlace(${p.id}, '${esc(p.name).replace(/'/g, "&#39;")}')">删除</button>
+        </span>
+      </div>
+      ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ""}
+      <div class="foot"><span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span><span>${by}</span></div>
+    </div>`;
+}
+
+/* ---------- 新建 / 编辑 ---------- */
+function openEdit(placeId, dayId) {
+  editingId = placeId ?? null;
+  clearErr("editErr");
+  const p = placeId ? trip.places.find(x => x.id === placeId) : null;
+  document.getElementById("editTitle").textContent = p ? `编辑：${p.name}` : "添加点位";
+
+  const selType = document.getElementById("fType");
+  selType.innerHTML = Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v.icon} ${v.label}</option>`).join("");
+  const selDay = document.getElementById("fDay");
+  selDay.innerHTML = trip.days.map(d => `<option value="${d.id}">${d.date} ${esc(d.title)}</option>`).join("");
+
+  if (p) {
+    fName.value = p.name; selType.value = p.type; selDay.value = p.dayId;
+    fLat.value = p.lat; fLng.value = p.lng; fSort.value = p.sortOrder;
+    fDesc.value = p.desc || ""; fFerry.checked = !!p.ferry;
+  } else {
+    fName.value = ""; selType.value = "sight"; selDay.value = dayId ?? trip.days[0]?.id;
+    fLat.value = ""; fLng.value = "";
+    const dayPlaces = trip.places.filter(x => x.dayId === (dayId ?? trip.days[0]?.id));
+    fSort.value = (dayPlaces.length ? Math.max(...dayPlaces.map(x => x.sortOrder)) : 0) + 1;
+    fDesc.value = ""; fFerry.checked = false;
+  }
+  document.getElementById("editOverlay").classList.add("show");
+}
+
+async function savePlace(e) {
+  e.preventDefault(); clearErr("editErr");
+  const payload = {
+    name: fName.value.trim(),
+    type: fType.value,
+    dayId: Number(fDay.value),
+    lat: Number(fLat.value),
+    lng: Number(fLng.value),
+    sortOrder: Number(fSort.value || 0),
+    desc: fDesc.value.trim(),
+    ferry: fFerry.checked,
+  };
+  try {
+    if (editingId) {
+      // PATCH：字段级 diff 在服务端做，这里全量提交即可
+      await api(`/api/places/${editingId}`, { method: "PATCH", body: JSON.stringify(payload) });
+      toast("已保存");
+    } else {
+      await api("/api/places", { method: "POST", body: JSON.stringify(payload) });
+      toast("已添加");
+    }
+    closeModal("editOverlay");
+    await loadTrip();
+  } catch (err) { showErr("editErr", err.message); }
+  return false;
+}
+
+async function removePlace(id, name) {
+  if (!confirm(`确定删除「${name}」吗？删除后仍可在历史中追溯。`)) return;
+  try {
+    await api(`/api/places/${id}`, { method: "DELETE" });
+    toast("已删除");
+    await loadTrip();
+  } catch (err) { toast(err.message); }
+}
+
+/* ---------- 历史 ---------- */
+async function openHistory(id, name) {
+  document.getElementById("revTitle").textContent = `修改历史：${name}`;
+  document.getElementById("revList").innerHTML = '<div style="color:var(--sub);font-size:13px">加载中…</div>';
+  document.getElementById("revOverlay").classList.add("show");
+  try {
+    const list = await api(`/api/places/${id}/revisions`);
+    if (!list.length) {
+      document.getElementById("revList").innerHTML = '<div style="color:var(--sub);font-size:13px">暂无记录</div>';
+      return;
+    }
+    const ACT = { create: "新建", update: "修改", delete: "删除" };
+    document.getElementById("revList").innerHTML = list.map(r => {
+      const lines = Object.entries(r.changes || {}).map(([k, v]) => {
+        const f = FIELD_LABEL[k] || k;
+        const old = v.old === null || v.old === undefined || v.old === "" ? "空" : v.old;
+        const nw = v.new === null || v.new === undefined || v.new === "" ? "空" : v.new;
+        return `<div class="line"><b>${f}</b>：${esc(old)} → ${esc(nw)}</div>`;
+      }).join("");
+      return `
+        <div class="rev">
+          <div class="who">
+            <span class="act ${r.action}">${ACT[r.action] || r.action}</span>
+            <span>${esc(r.userAvatar || "")} ${esc(r.userName || "已注销用户")}</span>
+            <span style="color:#9ca3af">${fmtTime(r.createdAt)}</span>
+          </div>${lines}
+        </div>`;
+    }).join("");
+  } catch (err) {
+    document.getElementById("revList").innerHTML = `<div style="color:var(--warn)">${esc(err.message)}</div>`;
+  }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+document.querySelectorAll(".overlay").forEach(el =>
+  el.addEventListener("mousedown", e => { if (e.target === el) el.classList.remove("show"); }));
+
+/* ---------- 启动 ---------- */
+(async function boot() {
+  if (!localStorage.getItem(TOKEN_KEY)) return showAuth();
+  try { await enterApp(); } catch { localStorage.removeItem(TOKEN_KEY); showAuth(); }
+})();
+</script>
+</body>
+</html>

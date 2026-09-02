@@ -1,0 +1,117 @@
+{
+  "title": "墨尔本国庆之旅",
+  "startDate": "2026-09-30",
+  "endDate": "2026-10-07",
+  "days": [
+    {
+      "dayDate": "2026-09-30",
+      "title": "香港 ✈ 墨尔本 · 抵达日",
+      "color": "#0ea5e9",
+      "sortOrder": 1,
+      "places": [
+        { "name": "香港国际机场 T1", "type": "traffic", "lat": 22.308, "lng": 113.9185, "desc": "11:20 起飞，国泰/澳航直飞墨尔本。", "ferry": false, "sortOrder": 1 },
+        { "name": "墨尔本机场 T2", "type": "traffic", "lat": -37.669, "lng": 144.841, "desc": "22:15 落地。入境请留好返程机票酒店单，T2 到达层出门即是 SkyBus 乘车点。", "ferry": false, "sortOrder": 2 },
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 3 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-01",
+      "title": "墨尔本市区 · 步行漫游日",
+      "color": "#10b981",
+      "sortOrder": 2,
+      "places": [
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 1 },
+        { "name": "维多利亚州立图书馆", "type": "sight", "lat": -37.8098, "lng": 144.965, "desc": "百年地标，著名的八角形穹顶阅览室免费开放。门前草坪是本地人晒太阳圣地。", "ferry": false, "sortOrder": 2 },
+        { "name": "皇家拱廊 Royal Arcade", "type": "sight", "lat": -37.8117, "lng": 144.9634, "desc": "澳洲最古老的拱廊（1869），玻璃穹顶 + 精品店，里面有家很有名的魔法商店。", "ferry": false, "sortOrder": 3 },
+        { "name": "联合小巷涂鸦街", "type": "sight", "lat": -37.8127, "lng": 144.9623, "desc": "Union Lane，CBD 最出片的涂鸦小巷，作品每周都在换，转身即到伯克街购物中心。", "ferry": false, "sortOrder": 4 },
+        { "name": "弗林德斯街车站", "type": "sight", "lat": -37.8183, "lng": 144.9671, "desc": "墨尔本门面级地标，黄铜穹顶钟楼。对角就是联邦广场，路口是全城最经典的机位。", "ferry": false, "sortOrder": 5 },
+        { "name": "联邦广场 Federation Square", "type": "sight", "lat": -37.8179, "lng": 144.9691, "desc": "城市客厅，常有免费展览和活动。旁边圣保罗大教堂可顺路参观。", "ferry": false, "sortOrder": 6 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-02",
+      "title": "莫宁顿半岛 · 轮渡过湾一日游",
+      "color": "#f59e0b",
+      "sortOrder": 3,
+      "places": [
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 1 },
+        { "name": "布莱顿彩虹小屋", "type": "nature", "lat": -37.9161, "lng": 144.9868, "desc": "82 座彩色更衣棚沿滩排开，墨尔本最经典的明信片机位，顺路第一站。", "ferry": false, "sortOrder": 2 },
+        { "name": "莫宁顿小镇主街", "type": "food", "lat": -38.2216, "lng": 145.0389, "desc": "Mornington Main Street 海边小镇，咖啡馆和早午餐店密集，适合歇脚吃午饭。", "ferry": false, "sortOrder": 3 },
+        { "name": "亚瑟座山观景台", "type": "nature", "lat": -38.352, "lng": 144.949, "desc": "半岛制高点，可俯瞰菲利普湾全景，观景塔 + 缆车 + 迷宫花园。", "ferry": false, "sortOrder": 4 },
+        { "name": "索伦托 Sorrento", "type": "nature", "lat": -38.3396, "lng": 144.7382, "desc": "石灰岩海岸小镇，逛完主街前往轮渡码头，乘 Searoad 渡轮过湾到对岸的昆斯克里夫。", "ferry": false, "sortOrder": 5 },
+        { "name": "索伦托轮渡码头", "type": "traffic", "lat": -38.33611, "lng": 144.74574, "desc": "Searoad Ferries 索伦托侧码头，连人带车横跨菲利普湾（约 40 分钟，班次密集，旺季建议提前购票）。", "ferry": false, "sortOrder": 6 },
+        { "name": "昆斯克里夫 Queenscliff", "type": "sight", "lat": -38.26561, "lng": 144.6725, "desc": "渡轮靠岸的维多利亚式海港小镇，有海事博物馆和黑色灯塔要塞，码头边咖啡馆适合小憩。", "ferry": true, "sortOrder": 7 },
+        { "name": "朗斯代尔角灯塔", "type": "sight", "lat": -38.29201, "lng": 144.61392, "desc": "Point Lonsdale Lighthouse，守在菲利普港湾入口「怒涛之门 The Rip」西侧，湾内湾外的分界点，可预约导览登塔。", "ferry": false, "sortOrder": 8 },
+        { "name": "吉朗海滨 Eastern Beach", "type": "nature", "lat": -38.1447, "lng": 144.3642, "desc": "回程顺路穿过吉朗壮丽的海滨一线（海边木雕人偶 + 旋转木马），补给后上 M1 高速。", "ferry": false, "sortOrder": 9 },
+        { "name": "西门大桥 West Gate Bridge", "type": "traffic", "lat": -37.82527, "lng": 144.88757, "desc": "M1 高速跨亚拉河的标志大桥，墨尔本西侧门户，过桥即进入市区。", "ferry": false, "sortOrder": 10 },
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 11 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-03",
+      "title": "大洋路（上）· 吉朗 → 阿波罗湾",
+      "color": "#ef4444",
+      "sortOrder": 4,
+      "places": [
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 1 },
+        { "name": "吉朗 Eastern Beach", "type": "nature", "lat": -38.1447, "lng": 144.3642, "desc": "大洋路门户城市，海边木雕人偶（Baywalk Bollards）+ 海滨步道，适合第一站伸展腿脚。", "ferry": false, "sortOrder": 2 },
+        { "name": "托尔坎 Torquay", "type": "sight", "lat": -38.3303, "lng": 144.3175, "desc": "大洋路官方起点、世界冲浪之都，主街可补给午餐和装备。", "ferry": false, "sortOrder": 3 },
+        { "name": "小红帽灯塔", "type": "sight", "lat": -38.4634, "lng": 144.102, "desc": "Split Point Lighthouse，白塔红帽矗立在海角上，《沿着大道走》的取景地，可登塔。", "ferry": false, "sortOrder": 4 },
+        { "name": "大洋路纪念拱门", "type": "sight", "lat": -38.472, "lng": 144.0447, "desc": "Memorial Arch，纪念一战退伍军人修建此路的牌坊，大洋路必拍打卡点。", "ferry": false, "sortOrder": 5 },
+        { "name": "洛恩小镇 Lorne", "type": "food", "lat": -38.5395, "lng": 143.9754, "desc": "滨海度假小镇，主街咖啡馆面对栈桥海景，去阿波罗湾前的最后补给点。", "ferry": false, "sortOrder": 6 },
+        { "name": "阿波罗湾国际汽车旅馆", "type": "hotel", "lat": -38.756, "lng": 143.6688, "desc": "今晚落脚：阿波罗湾小镇，渔港日落 + 海鲜晚餐，明早出发去十二门徒只需 1 小时。", "ferry": false, "sortOrder": 7 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-04",
+      "title": "大洋路（下）· 十二门徒 → 返回墨尔本",
+      "color": "#8b5cf6",
+      "sortOrder": 5,
+      "places": [
+        { "name": "阿波罗湾国际汽车旅馆", "type": "hotel", "lat": -38.756, "lng": 143.6688, "desc": "出发点。想看日出的 6 点前出发去吉布森台阶。", "ferry": false, "sortOrder": 1 },
+        { "name": "吉布森台阶", "type": "nature", "lat": -38.6686, "lng": 143.1121, "desc": "86 级台阶下到海滩，从海平面仰拍十二门徒，比观景台震撼得多。", "ferry": false, "sortOrder": 2 },
+        { "name": "十二门徒岩", "type": "nature", "lat": -38.665, "lng": 143.105, "desc": "大洋路灵魂景点，石灰岩柱群立海中，观景步道有多个平台。旺季停车位紧张。", "ferry": false, "sortOrder": 3 },
+        { "name": "洛克阿德大峡谷", "type": "nature", "lat": -38.6548, "lng": 143.1065, "desc": "1878 年 Loch Ard 号沉船遗址，峡谷步道下到天然洞穴，故事感拉满。", "ferry": false, "sortOrder": 4 },
+        { "name": "岩拱 The Arch", "type": "nature", "lat": -38.6366, "lng": 143.0873, "desc": "海浪长年冲刷出的石拱，观景台看浪拍拱门。", "ferry": false, "sortOrder": 5 },
+        { "name": "伦敦桥", "type": "nature", "lat": -38.6263, "lng": 143.0718, "desc": "London Arch，1990 年桥身坍塌后成了离岸孤拱，日落时分最美。", "ferry": false, "sortOrder": 6 },
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 7 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-05",
+      "title": "市区自由活动 · Carrum 海滨",
+      "color": "#ec4899",
+      "sortOrder": 6,
+      "places": [
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 1 },
+        { "name": "Carrum 海滩", "type": "nature", "lat": -38.0809, "lng": 145.122, "desc": "安静的长滩 + 木栈码头，本地人遛狗晒太阳的地方，适合放空散步。", "ferry": false, "sortOrder": 2 },
+        { "name": "圣基尔达海滩 & 栈桥", "type": "nature", "lat": -37.8678, "lng": 144.974, "desc": "墨尔本最热闹的海滩区，日落游乐场灯光很美。彩蛋：栈桥尽头石缝里住着野生小企鹅，天黑后有机会看到归巢！", "ferry": false, "sortOrder": 3 },
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 4 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-06",
+      "title": "蒸汽小火车 & 企鹅归巢一日游",
+      "color": "#14b8a6",
+      "sortOrder": 7,
+      "places": [
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 1 },
+        { "name": "Puffing Billy 蒸汽小火车 · 贝尔格雷夫站", "type": "sight", "lat": -37.8196, "lng": 145.3528, "desc": "1900 年代窄轨蒸汽火车，经典项目「坐窗台」把腿伸出车外穿越森林。建议坐 10:30 班次。", "ferry": false, "sortOrder": 2 },
+        { "name": "Lakeside 站 · 艾默拉德湖", "type": "nature", "lat": -37.9225, "lng": 145.46, "desc": "蒸汽小火车中途大站，湖畔喂野生葵花凤头鹦鹉，适合野餐。", "ferry": false, "sortOrder": 3 },
+        { "name": "诺比斯角 The Nobbies", "type": "nature", "lat": -38.5177, "lng": 145.1168, "desc": "菲利普岛西南端海角栈道，海豹岩上看懒洋洋的海豹群。", "ferry": false, "sortOrder": 4 },
+        { "name": "企鹅归巢中心 Penguin Parade", "type": "nature", "lat": -38.5121, "lng": 145.1462, "desc": "重头戏：世界最小的蓝企鹅（约 33cm）日落成群摇摇摆摆上岸回巢。普通观景台即可，记得穿厚点，海边夜里很冷。", "ferry": false, "sortOrder": 5 },
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 6 }
+      ]
+    },
+    {
+      "dayDate": "2026-10-07",
+      "title": "返程 · 墨尔本 ✈ 香港",
+      "color": "#f97316",
+      "sortOrder": 8,
+      "places": [
+        { "name": "Holiday Inn 伯克街假日酒店", "type": "hotel", "lat": -37.8152, "lng": 144.9548, "desc": "全程市内落脚点（296 Little Collins St）。位于 CBD 核心，步行可达伯克街购物中心、皇家拱廊，去南十字星车站乘 SkyBus 也很方便。", "ferry": false, "sortOrder": 1 },
+        { "name": "墨尔本机场 T2", "type": "traffic", "lat": -37.669, "lng": 144.841, "desc": "国际出发。退税 TRS 需在值机后办理，液体超 100ml 记得托运前处理。", "ferry": false, "sortOrder": 2 }
+      ]
+    }
+  ]
+}

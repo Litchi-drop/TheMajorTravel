@@ -36,12 +36,12 @@ func OpenDB(dsn string) (*gorm.DB, error) {
 // Migrate 建表/补列（幂等）；唯一性用 lower(email) 函数索引，
 // 与报告 §5.2 的 idx_users_email_lower 等价
 func Migrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&model.User{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.Trip{}, &model.Day{}, &model.Place{}, &model.PlaceRevision{}); err != nil {
 		return fmt.Errorf("AutoMigrate: %w", err)
 	}
 	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users(lower(email))`).Error; err != nil {
 		return fmt.Errorf("创建 email 唯一索引: %w", err)
 	}
-	log.Println("数据库迁移完成: users")
+	log.Println("数据库迁移完成: users, trips, days, places, place_revisions")
 	return nil
 }

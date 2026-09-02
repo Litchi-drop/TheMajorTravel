@@ -60,6 +60,22 @@ func (r *UserRepo) ByID(ctx context.Context, id int64) (*model.User, error) {
 	return &u, nil
 }
 
+// ByIDs 批量查询，行程视图给点位补修改人昵称/头像用
+func (r *UserRepo) ByIDs(ctx context.Context, ids []int64) (map[int64]*model.User, error) {
+	if len(ids) == 0 {
+		return map[int64]*model.User{}, nil
+	}
+	var us []model.User
+	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&us).Error; err != nil {
+		return nil, fmt.Errorf("批量查询用户: %w", err)
+	}
+	m := make(map[int64]*model.User, len(us))
+	for i := range us {
+		m[us[i].ID] = &us[i]
+	}
+	return m, nil
+}
+
 func (r *UserRepo) TouchLastLogin(ctx context.Context, id int64, t time.Time) error {
 	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Update("last_login_at", t).Error
 }
