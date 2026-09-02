@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -12,10 +13,16 @@ type Config struct {
 	PgDSN     string // PostgreSQL 连接串
 	RedisAddr string // Redis 地址
 	JWTSecret string // HS256 签名密钥，只来自环境变量/.env，绝不硬编码
-	SeedUsers string // Step 0 占位：Step 1 改邀请码制后移除
+
+	InviteCode       string // 注册邀请码（一期小队制）
+	EmailCodeEnabled bool   // 邮箱验证码开关；关闭时注册免验证码（开发期默认）
+	SMTPHost         string
+	SMTPPort         string // 465=隐式 TLS，587/25=明文+自动 STARTTLS
+	SMTPUser         string // 发件邮箱
+	SMTPPass         string // SMTP 授权码
 }
 
-// Load 读取环境变量；本地开发时自动加载 backend/.env（不存在则静默跳过，生产用环境变量）
+// Load 读取环境变量；本地开发时自动加载 backend/.env（不存在则静默跳过，生产直接注入环境变量）
 func Load() *Config {
 	_ = godotenv.Load()
 
@@ -24,10 +31,16 @@ func Load() *Config {
 		PgDSN:     getenv("MT_PG_DSN", "postgres://postgres:postgres@localhost:5432/major_travel?sslmode=disable"),
 		RedisAddr: getenv("MT_REDIS_ADDR", "localhost:6379"),
 		JWTSecret: getenv("MT_JWT_SECRET", ""),
-		SeedUsers: getenv("MT_SEED_USERS", ""),
+
+		InviteCode:       getenv("MT_INVITE_CODE", ""),
+		EmailCodeEnabled: getbool("MT_EMAIL_CODE_ENABLED", false),
+		SMTPHost:         getenv("MT_SMTP_HOST", ""),
+		SMTPPort:         getenv("MT_SMTP_PORT", "465"),
+		SMTPUser:         getenv("MT_SMTP_USER", ""),
+		SMTPPass:         getenv("MT_SMTP_PASS", ""),
 	}
-	if cfg.JWTSecret == "" {
-		log.Println("警告: MT_JWT_SECRET 未设置，认证功能（Step 1）上线前必须在 .env 配置")
+	if cfg.InviteCode == "" {
+		log.Println("警告: MT_INVITE_CODE 未设置，注册功能将拒绝所有人（正式值写入本机 .env）")
 	}
 	return cfg
 }
@@ -35,6 +48,15 @@ func Load() *Config {
 func getenv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return def
+}
+
+func getbool(key string, def bool) bool {
+	if v := os.Getenv(key); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return b
+		}
 	}
 	return def
 }
